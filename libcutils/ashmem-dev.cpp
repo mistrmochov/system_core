@@ -325,6 +325,7 @@ int ashmem_unpin_region(int fd, size_t offset, size_t length) {
     return do_pin(ASHMEM_UNPIN, fd, offset, length);
 }
 
+__attribute__((no_sanitize("integer")))
 int ashmem_get_size_region(int fd) {
     if (is_memfd_fd(fd)) {
         struct stat sb;
