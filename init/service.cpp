@@ -560,10 +560,10 @@ void Service::RunService(const std::vector<Descriptor>& descriptors,
         LOG(ERROR) << name_ << ": failed to read from notification channel: " << byte.error();
     }
     cgroups_activated.Close();
-    if (*byte != kCgroupsActivated) {
+    /*if (*byte != kCgroupsActivated) {
         LOG(FATAL) << "Service '" << name_  << "' failed to start due to a fatal error";
         _exit(EXIT_FAILURE);
-    }
+    }*/
 
     if (task_profiles_.size() > 0) {
         bool succeeded = SelinuxGetVendorAndroidVersion() < __ANDROID_API_U__
@@ -744,14 +744,14 @@ Result<void> Service::Start() {
         bool use_memcg = swappiness_ != -1 || soft_limit_in_bytes_ != -1 || limit_in_bytes_ != -1 ||
                          limit_percent_ != -1 || !limit_property_.empty();
         errno = -createProcessGroup(uid(), pid_, use_memcg);
-        if (errno != 0) {
+        /*if (errno != 0) {
             Result<void> result = cgroups_activated.Write(kActivatingCgroupsFailed);
             if (!result.ok()) {
                 return Error() << "Sending notification failed: " << result.error();
             }
             return Error() << "createProcessGroup(" << uid() << ", " << pid_ << ", " << use_memcg
                            << ") failed for service '" << name_ << "': " << strerror(errno);
-        }
+        }*/
 
         // When the blkio controller is mounted in the v1 hierarchy, NormalIoPriority is
         // the default (/dev/blkio). When the blkio controller is mounted in the v2 hierarchy, the
