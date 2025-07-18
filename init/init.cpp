@@ -1063,6 +1063,9 @@ int SecondStageMain(int argc, char** argv) {
     InitKernelLogging(argv);
     LOG(INFO) << "init second stage started!";
 
+    // Waydroid should not interrupt the host from sleeping
+    cap_drop_bound(CAP_WAKE_ALARM);
+
     SelinuxSetupKernelLogging();
 
     // Update $PATH in the case the second stage init is newer than first stage init, where it is
