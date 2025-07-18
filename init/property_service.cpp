@@ -1360,6 +1360,14 @@ void PropertyLoadBootDefaults() {
     load_properties_from_file("/odm_dlkm/etc/build.prop", nullptr, &properties);
     load_properties_from_partition("odm", /* support_legacy_path_until */ 28);
     load_properties_from_partition("product", /* support_legacy_path_until */ 30);
+ 
+    if (int vendor; ParseInt(properties["ro.vendor.build.version.sdk"], &vendor) &&
+        vendor >= 33) {
+        if (properties["ro.hardware.egl"] == "swiftshader") {
+            properties["ro.hardware.egl"] = "angle";
+            properties["ro.hardware.vulkan"] = "pastel";
+        }
+    }
 
     if (access(kDebugRamdiskProp, R_OK) == 0) {
         LOG(INFO) << "Loading " << kDebugRamdiskProp;
