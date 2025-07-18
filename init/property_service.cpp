@@ -1360,6 +1360,7 @@ void PropertyLoadBootDefaults() {
     load_properties_from_file("/odm_dlkm/etc/build.prop", nullptr, &properties);
     load_properties_from_partition("odm", /* support_legacy_path_until */ 28);
     load_properties_from_partition("product", /* support_legacy_path_until */ 30);
+    load_properties_from_file("/vendor/waydroid.prop", nullptr, &properties);
  
     if (int vendor; ParseInt(properties["ro.vendor.build.version.sdk"], &vendor) &&
         vendor >= 33) {
