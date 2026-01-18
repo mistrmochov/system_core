@@ -21,6 +21,7 @@
 #include <sys/sysmacros.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <memory>
@@ -28,10 +29,12 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <vector>
 
 #include <android-base/chrono_utils.h>
 #include <android-base/file.h>
 #include <android-base/logging.h>
+#include <android-base/properties.h>
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
 #include <fs_mgr.h>
@@ -780,6 +783,11 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
         if (StartsWith(uevent.path, "/devices")) {
             links = GetBlockDeviceSymlinks(uevent);
         }
+
+        // Waydroid: only process dm/loop devices
+        if (!(StartsWith(uevent.device_name, "dm") || StartsWith(uevent.device_name, "loop"))) {
+            return;
+        }
     } else if (const auto subsystem =
                    std::find(subsystems_.cbegin(), subsystems_.cend(), uevent.subsystem);
                subsystem != subsystems_.cend()) {
@@ -806,6 +814,18 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
         devpath = "/dev/" + uevent.device_name;
     } else {
         devpath = "/dev/" + Basename(uevent.path);
+    }
+
+    // Waydroid: ignore input/TTY devices by default
+    auto tty_dev = (uevent.major != 5 && StartsWith(uevent.device_name, "tty"));
+    auto input_dev = StartsWith(uevent.device_name, "input/");
+    auto hwcomposer = base::GetProperty("ro.hardware.hwcomposer", "");
+    auto whitelist = base::Split(base::GetProperty("persist.waydroid.uevent.whitelist", ""), ":");
+
+    if ((tty_dev || (input_dev && hwcomposer != "drm_minigbm")) &&
+        std::count(whitelist.begin(), whitelist.end(), Basename(uevent.device_name)) == 0)
+    {
+        return;
     }
 
     mkdir_recursive(Dirname(devpath), 0755);
