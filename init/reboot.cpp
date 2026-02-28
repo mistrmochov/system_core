@@ -998,6 +998,7 @@ static void DoReboot(unsigned int cmd, const std::string& reason,
     if (!is_thermal_shutdown) std::this_thread::sleep_for(100ms);
 
     // Reboot regardless of umount status. If umount fails, fsck after reboot will fix it.
+#if 0
     std::string data_fs_type = GetDataFsType();
     if (!data_fs_type.empty()) {
         // Do not delete: Critical log for reboot_fs_integrity_test.
@@ -1026,6 +1027,7 @@ static void DoReboot(unsigned int cmd, const std::string& reason,
             LOG(ERROR) << "Unknown /data fs type: " << data_fs_type;
         }
     }
+#endif
 
     LogShutdownTime(stat, t);
     RebootSystem(cmd, reboot_target, reason);
