@@ -93,6 +93,7 @@ static bool __has_memfd_support() {
         return false;
     }
 
+#if 0
     // Check that the kernel supports the ashmem ioctls on a memfd.
     int ashmem_size = TEMP_FAILURE_RETRY(ioctl(fd, ASHMEM_GET_SIZE, 0));
     if (ashmem_size != static_cast<int>(buf_size)) {
@@ -100,6 +101,7 @@ static bool __has_memfd_support() {
               ashmem_size, buf_size);
         return false;
     }
+#endif
 
     if (debug_log) {
         ALOGD("memfd: device has memfd support, using it");
