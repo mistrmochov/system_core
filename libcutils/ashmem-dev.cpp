@@ -202,8 +202,12 @@ static bool is_memfd_fd(int fd) {
     std::string fd_path = android::base::StringPrintf("/proc/self/fd/%d", fd);
     std::string result;
     if (!android::base::Readlink(fd_path, &result)) {
-        ALOGE("readlink(%s) failed: %m", fd_path.c_str());
-        return false;
+        if (errno == EPERM) {
+            return has_memfd_support();
+        } else {
+            ALOGE("readlink(%s) failed: %m", fd_path.c_str());
+            return false;
+        }
     }
     return result.starts_with("/memfd:");
 }
