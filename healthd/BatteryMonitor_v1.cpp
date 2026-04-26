@@ -762,6 +762,8 @@ void BatteryMonitor::init(struct healthd_config *hc) {
         KLOG_WARNING(LOG_TAG, "No battery devices found\n");
         hc->periodic_chores_interval_fast = -1;
         hc->periodic_chores_interval_slow = -1;
+        mBatteryFixedCapacity = FAKE_BATTERY_CAPACITY;
+        mBatteryFixedTemperature = FAKE_BATTERY_TEMPERATURE;
     } else {
         if (mHealthdConfig->batteryStatusPath.empty())
             KLOG_WARNING(LOG_TAG, "BatteryStatusPath not found\n");
