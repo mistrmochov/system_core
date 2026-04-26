@@ -25,6 +25,8 @@
 #include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
+#include <spawn.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -333,6 +335,15 @@ static std::unique_ptr<FirstStageMount> CreateFirstStageMount(const std::string&
 }
 
 int FirstStageMain(int argc, char** argv) {
+    // Run waydroid-preinit first before doing anything
+    if (getpid() == 1) {
+        pid_t preinit_pid;
+
+        if (posix_spawn(&preinit_pid, "/system/bin/waydroid-preinit", NULL, NULL, argv, (char *[]){ nullptr }) == 0) {
+            waitpid(preinit_pid, NULL, 0);
+        }
+    }
+
     if (REBOOT_BOOTLOADER_ON_PANIC) {
         InstallRebootSignalHandlers();
     }
