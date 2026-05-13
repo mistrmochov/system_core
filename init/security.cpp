@@ -102,6 +102,7 @@ static bool SetMmapRndBitsMin(int start, int min, bool compat) {
 // ec9ee4acd97c drivers: char: random: add get_random_long()
 // 5ef11c35ce86 mm: ASLR: use get_random_long()
 Result<void> SetMmapRndBitsAction(const BuiltinArguments&) {
+#if 0 // Disabled in Waydroid
 // values are arch-dependent
 #if defined(USER_MODE_LINUX)
     // uml does not support mmap_rnd_bits
@@ -142,6 +143,9 @@ Result<void> SetMmapRndBitsAction(const BuiltinArguments&) {
 
     LOG(FATAL) << "Unable to set adequate mmap entropy value!";
     return Error();
+#else
+    return {};
+#endif
 }
 
 // Test for whether the kernel has SELinux hooks for the perf_event_open()

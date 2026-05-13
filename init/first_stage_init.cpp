@@ -341,6 +341,9 @@ int FirstStageMain(int argc, char** argv) {
 #define CHECKCALL(x) \
     if ((x) != 0) errors.emplace_back(#x " failed", errno);
 
+#define MKDIR_IF_NOT_EXIST(dir, mode) \
+    access(dir, F_OK) == 0 ? 0 : mkdir(dir, mode)
+
     // Clear the umask.
     umask(0);
 
@@ -348,13 +351,13 @@ int FirstStageMain(int argc, char** argv) {
     CHECKCALL(setenv("PATH", _PATH_DEFPATH, 1));
     // Get the basic filesystem setup we need put together in the initramdisk
     // on / and then we'll let the rc file figure out the rest.
-    CHECKCALL(mount("tmpfs", "/dev", "tmpfs", MS_NOSUID, "mode=0755"));
-    CHECKCALL(mkdir("/dev/pts", 0755));
-    CHECKCALL(mkdir("/dev/socket", 0755));
-    CHECKCALL(mkdir("/dev/dm-user", 0755));
-    CHECKCALL(mount("devpts", "/dev/pts", "devpts", 0, NULL));
+    CHECKCALL(mount("tmpfs", "/dev", "tmpfs", MS_REMOUNT | MS_NOSUID, "mode=0755"));
+    CHECKCALL(MKDIR_IF_NOT_EXIST("/dev/pts", 0755));
+    CHECKCALL(MKDIR_IF_NOT_EXIST("/dev/socket", 0755));
+    CHECKCALL(MKDIR_IF_NOT_EXIST("/dev/dm-user", 0755));
+    CHECKCALL(mount("devpts", "/dev/pts", "devpts", MS_REMOUNT, NULL));
 #define MAKE_STR(x) __STRING(x)
-    CHECKCALL(mount("proc", "/proc", "proc", 0, "hidepid=2,gid=" MAKE_STR(AID_READPROC)));
+    CHECKCALL(mount("proc", "/proc", "proc", MS_REMOUNT, "hidepid=2,gid=" MAKE_STR(AID_READPROC)));
 #undef MAKE_STR
     std::string cmdline;
     android::base::ReadFileToString("/proc/cmdline", &cmdline);
@@ -364,29 +367,37 @@ int FirstStageMain(int argc, char** argv) {
     android::base::ReadFileToString("/proc/bootconfig", &bootconfig);
     gid_t groups[] = {AID_READPROC};
     CHECKCALL(setgroups(arraysize(groups), groups));
+#if 0 // Disabled in Waydroid, mounted by host system instead
     CHECKCALL(mount("sysfs", "/sys", "sysfs", 0, NULL));
     CHECKCALL(mount("selinuxfs", "/sys/fs/selinux", "selinuxfs", 0, NULL));
+#endif
 
-    CHECKCALL(mknod("/dev/kmsg", S_IFCHR | 0600, makedev(1, 11)));
+#define MKNOD_IF_NOT_EXIST(dev, perm, id) \
+    access(dev, F_OK) == 0 ? chmod(dev, perm & 0777) : mknod(dev, perm, id)
+
+#define REMOUNT_OR_MOUNT(src, dst, type, flags, data) \
+    mount(src, dst, type, MS_REMOUNT | flags, data) == -1 ? mount(src, dst, type, flags, data) : 0
+
+    CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/kmsg", S_IFCHR | 0600, makedev(1, 11)));
 
     if constexpr (WORLD_WRITABLE_KMSG) {
-        CHECKCALL(mknod("/dev/kmsg_debug", S_IFCHR | 0622, makedev(1, 11)));
+        CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/kmsg_debug", S_IFCHR | 0622, makedev(1, 11)));
     }
 
-    CHECKCALL(mknod("/dev/random", S_IFCHR | 0666, makedev(1, 8)));
-    CHECKCALL(mknod("/dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
+    CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/random", S_IFCHR | 0666, makedev(1, 8)));
+    CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
 
     // This is needed for log wrapper, which gets called before ueventd runs.
-    CHECKCALL(mknod("/dev/ptmx", S_IFCHR | 0666, makedev(5, 2)));
-    CHECKCALL(mknod("/dev/null", S_IFCHR | 0666, makedev(1, 3)));
+    CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/ptmx", S_IFCHR | 0666, makedev(5, 2)));
+    CHECKCALL(MKNOD_IF_NOT_EXIST("/dev/null", S_IFCHR | 0666, makedev(1, 3)));
 
     // These below mounts are done in first stage init so that first stage mount can mount
     // subdirectories of /mnt/{vendor,product}/.  Other mounts, not required by first stage mount,
     // should be done in rc files.
     // Mount staging areas for devices managed by vold
     // See storage config details at http://source.android.com/devices/storage/
-    CHECKCALL(mount("tmpfs", "/mnt", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV,
-                    "mode=0755,uid=0,gid=1000"));
+    CHECKCALL(REMOUNT_OR_MOUNT("tmpfs", "/mnt", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV,
+                               "mode=0755,uid=0,gid=1000"));
     // /mnt/vendor is used to mount vendor-specific partitions that can not be
     // part of the vendor partition, e.g. because they are mounted read-write.
     CHECKCALL(mkdir("/mnt/vendor", 0755));
@@ -407,6 +418,9 @@ int FirstStageMain(int argc, char** argv) {
         CHECKCALL(mount("tmpfs", "/microdroid_resources", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV,
                         "mode=0750,uid=0,gid=0"));
     }
+#undef MKDIR_IF_NOT_EXIST
+#undef MKNOD_IF_NOT_EXIST
+#undef REMOUNT_OR_MOUNT
 #undef CHECKCALL
 
     SetStdioToDevNull(argv);
@@ -523,6 +537,7 @@ int FirstStageMain(int argc, char** argv) {
     if (IsRecoveryMode()) {
         LOG(INFO) << "First stage mount skipped (recovery mode)";
     } else {
+#if 0 // Disabled in Waydroid
         if (!fsm) {
             fsm = CreateFirstStageMount(cmdline);
         }
@@ -537,6 +552,7 @@ int FirstStageMain(int argc, char** argv) {
         if (!fsm->DoFirstStageMount()) {
             LOG(FATAL) << "Failed to mount required partitions early ...";
         }
+#endif
     }
 
     struct stat new_root_info {};
@@ -555,7 +571,7 @@ int FirstStageMain(int argc, char** argv) {
            1);
 
     const char* path = "/system/bin/init";
-    const char* args[] = {path, "selinux_setup", nullptr};
+    const char* args[] = {path, "second_stage", nullptr}; // Waydroid: skip selinux_setup
     auto fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
     dup2(fd, STDOUT_FILENO);
     dup2(fd, STDERR_FILENO);

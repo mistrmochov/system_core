@@ -402,6 +402,7 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
     auto [mode, uid, gid] = GetDevicePermissions(path, links);
     mode |= (block ? S_IFBLK : S_IFCHR);
 
+#if 0 // Disabled in Waydroid
     std::string secontext;
     if (!SelabelLookupFileContextBestMatch(path, links, mode, &secontext)) {
         PLOG(ERROR) << "Device '" << path << "' not created; cannot find SELinux label";
@@ -410,6 +411,7 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
     if (!secontext.empty()) {
         setfscreatecon(secontext.c_str());
     }
+#endif
 
     gid_t new_group = -1;
 
@@ -423,6 +425,7 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
         PLOG(ERROR) << "setegid(" << gid << ") for " << path << " device failed";
         goto out;
     }
+#if 0 // Disabled in Waydroid
     /* If the node already exists update its SELinux label and the file mode to handle cases when
      * it was created with the wrong context and file mode during coldboot procedure. */
     if (mknod(path.c_str(), mode, dev) && (errno == EEXIST) && !secontext.empty()) {
@@ -455,6 +458,9 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
             PLOG(ERROR) << "Cannot stat " << path;
         }
     }
+#else
+    mknod(path.c_str(), mode, dev);
+#endif
 
 out:
     if (chown(path.c_str(), uid, new_group) < 0) {
@@ -464,9 +470,11 @@ out:
         PLOG(FATAL) << "setegid(AID_ROOT) failed";
     }
 
+#if 0 // Disabled in Waydroid
     if (!secontext.empty()) {
         setfscreatecon(nullptr);
     }
+#endif
 }
 
 // replaces any unacceptable characters with '_', the
@@ -600,20 +608,24 @@ void DeviceHandler::HandleDevice(const std::string& action, const std::string& d
                 PLOG(ERROR) << "Failed to create directory " << Dirname(link);
             }
 
+#if 0 // Disabled in Waydroid
             // Create symlink and make sure it's correctly labeled
             std::string secontext;
             // Passing 0 for mode should work.
             if (SelabelLookupFileContext(link, 0, &secontext) && !secontext.empty()) {
                 setfscreatecon(secontext.c_str());
             }
+#endif
 
             int rc = symlink(target.c_str(), link.c_str());
 
+#if 0 // Disabled in Waydroid
             if (!secontext.empty()) {
                 int save_errno = errno;
                 setfscreatecon(nullptr);
                 errno = save_errno;
             }
+#endif
 
             if (rc < 0) {
                 if (errno != EEXIST) {

@@ -151,6 +151,7 @@ void StopSendingMessages() {
 }
 
 bool CanReadProperty(const std::string& source_context, const std::string& name) {
+#if 0 // Disabled in Waydroid
     const char* target_context = nullptr;
     property_info_area->GetPropertyInfo(name.c_str(), &target_context, nullptr);
 
@@ -163,11 +164,15 @@ bool CanReadProperty(const std::string& source_context, const std::string& name)
 
     auto lock = std::lock_guard{selinux_check_access_lock};
     return selinux_check_access(source_context.c_str(), target_context, "file", "read",
-                                &audit_data) == 0;
+                                &audit_data) == 0
+#else
+    return true;
+#endif
 }
 
 static bool CheckMacPerms(const std::string& name, const char* target_context,
                           const char* source_context, const ucred& cr) {
+#if 0 // Disabled in Waydroid
     if (!target_context || !source_context) {
         return false;
     }
@@ -180,6 +185,9 @@ static bool CheckMacPerms(const std::string& name, const char* target_context,
     auto lock = std::lock_guard{selinux_check_access_lock};
     return selinux_check_access(source_context, target_context, "property_service", "set",
                                 &audit_data) == 0;
+#else
+    return true;
+#endif
 }
 
 void NotifyPropertyChange(const std::string& name, const std::string& value) {
@@ -646,10 +654,14 @@ static void handle_property_set_fd(int fd) {
         prop_value[PROP_VALUE_MAX-1] = 0;
 
         std::string source_context;
+#if 0 // Disabled in Waydroid
         if (!socket.GetSourceContext(&source_context)) {
             PLOG(ERROR) << "Unable to set property '" << prop_name << "': getpeercon() failed";
             return;
         }
+#else
+        source_context = "";
+#endif
 
         const auto& cr = socket.cred();
         std::string error;
@@ -673,11 +685,15 @@ static void handle_property_set_fd(int fd) {
         }
 
         std::string source_context;
+#if 0 // Disabled in Waydroid
         if (!socket.GetSourceContext(&source_context)) {
             PLOG(ERROR) << "Unable to set property '" << name << "': getpeercon() failed";
             socket.SendUint32(PROP_ERROR_PERMISSION_DENIED);
             return;
         }
+#else
+        source_context = "";
+#endif
 
         // HandlePropertySet takes ownership of the socket if the set is handled asynchronously.
         const auto& cr = socket.cred();

@@ -774,19 +774,23 @@ static Result<void> do_trigger(const BuiltinArguments& args) {
 }
 
 static int MakeSymlink(const std::string& target, const std::string& linkpath) {
+#if 0 // Disabled in Waydroid
     std::string secontext;
     // Passing 0 for mode should work.
     if (SelabelLookupFileContext(linkpath, 0, &secontext) && !secontext.empty()) {
         setfscreatecon(secontext.c_str());
     }
+#endif
 
     int rc = symlink(target.c_str(), linkpath.c_str());
 
+#if 0 // Disabled in Waydroid
     if (!secontext.empty()) {
         int save_errno = errno;
         setfscreatecon(nullptr);
         errno = save_errno;
     }
+#endif
 
     return rc;
 }

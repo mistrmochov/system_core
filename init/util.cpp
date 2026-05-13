@@ -95,18 +95,22 @@ Result<uid_t> DecodeUid(const std::string& name) {
  */
 Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool should_listen,
                          mode_t perm, uid_t uid, gid_t gid, const std::string& socketcon) {
+#if 0 // Disabled in Waydroid
     if (!socketcon.empty()) {
         if (setsockcreatecon(socketcon.c_str()) == -1) {
             return ErrnoError() << "setsockcreatecon(\"" << socketcon << "\") failed";
         }
     }
+#endif
 
     android::base::unique_fd fd(socket(PF_UNIX, type, 0));
     if (fd < 0) {
         return ErrnoError() << "Failed to open socket '" << name << "'";
     }
 
+#if 0 // Disabled in Waydroid
     if (!socketcon.empty()) setsockcreatecon(nullptr);
+#endif
 
     struct sockaddr_un addr;
     memset(&addr, 0 , sizeof(addr));
@@ -117,10 +121,12 @@ Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool 
         return ErrnoError() << "Failed to unlink old socket '" << name << "'";
     }
 
+#if 0 // Disabled in Waydroid
     std::string secontext;
     if (SelabelLookupFileContext(addr.sun_path, S_IFSOCK, &secontext) && !secontext.empty()) {
         setfscreatecon(secontext.c_str());
     }
+#endif
 
     if (passcred) {
         int on = 1;
@@ -132,9 +138,11 @@ Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool 
     int ret = bind(fd.get(), (struct sockaddr*)&addr, sizeof(addr));
     int savederrno = errno;
 
+#if 0 // Disabled in Waydroid
     if (!secontext.empty()) {
         setfscreatecon(nullptr);
     }
+#endif
 
     auto guard = android::base::make_scope_guard([&addr] { unlink(addr.sun_path); });
 
@@ -187,18 +195,22 @@ Result<std::string> ReadFile(const std::string& path) {
 }
 
 static int OpenFile(const std::string& path, int flags, mode_t mode) {
+#if 0 // Disabled in Waydroid
     std::string secontext;
     if (SelabelLookupFileContext(path, mode, &secontext) && !secontext.empty()) {
         setfscreatecon(secontext.c_str());
     }
+#endif
 
     int rc = open(path.c_str(), flags, mode);
 
+#if 0 // Disabled in Waydroid
     if (!secontext.empty()) {
         int save_errno = errno;
         setfscreatecon(nullptr);
         errno = save_errno;
     }
+#endif
 
     return rc;
 }
@@ -245,18 +257,22 @@ int wait_for_file(const char* filename, std::chrono::nanoseconds timeout) {
 }
 
 bool make_dir(const std::string& path, mode_t mode) {
+#if 0 // Disabled in Waydroid
     std::string secontext;
     if (SelabelLookupFileContext(path, mode, &secontext) && !secontext.empty()) {
         setfscreatecon(secontext.c_str());
     }
+#endif
 
     int rc = mkdir(path.c_str(), mode);
 
+#if 0 // Disabled in Waydroid
     if (!secontext.empty()) {
         int save_errno = errno;
         setfscreatecon(nullptr);
         errno = save_errno;
     }
+#endif
 
     return rc == 0;
 }
