@@ -19,6 +19,8 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <string.h>
+#include <sys/mount.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include <memory>
@@ -182,12 +184,36 @@ ListenerAction UeventListener::RegenerateUeventsForPath(const std::string& path,
     return RegenerateUeventsForDir(d.get(), callback);
 }
 
-static const char* kRegenerationPaths[] = {"/sys/devices"};
+static const char* kRegenerationPaths[] = {"devices"};
 
 void UeventListener::RegenerateUevents(const ListenerCallback& callback) const {
-    for (const auto path : kRegenerationPaths) {
-        if (RegenerateUeventsForPath(path, callback) == ListenerAction::kStop) return;
+    int fsfd, mntfd;
+
+    if ((fsfd = syscall(__NR_fsopen, "sysfs", FSOPEN_CLOEXEC)) == -1) {
+        PLOG(FATAL) << "Failed to create sysfs mount context";
     }
+
+    syscall(__NR_fsconfig, fsfd, FSCONFIG_CMD_CREATE, NULL, NULL, 0);
+
+    if ((mntfd = syscall(__NR_fsmount, fsfd, FSMOUNT_CLOEXEC, 0)) == -1) {
+        PLOG(FATAL) << "Failed to initialize sysfs mount";
+    }
+
+    // Remount sysfs in read-write mode
+    if (close(fsfd), (fsfd = syscall(__NR_fspick, mntfd, "", FSPICK_EMPTY_PATH)) == -1) {
+        PLOG(FATAL) << "Failed to reconfigure sysfs mount";
+    }
+
+    syscall(__NR_fsconfig, fsfd, FSCONFIG_SET_FLAG, "rw", NULL, 0);
+    syscall(__NR_fsconfig, fsfd, FSCONFIG_CMD_RECONFIGURE, NULL, NULL, 0);
+    close(fsfd);
+
+    for (const auto path : kRegenerationPaths) {
+        std::unique_ptr<DIR, decltype(&closedir)> d(fdopendir(openat(mntfd, path, O_DIRECTORY | O_CLOEXEC)), closedir);
+        if (RegenerateUeventsForDir(d.get(), callback) == ListenerAction::kStop) break;
+    }
+
+    close(mntfd);
 }
 
 void UeventListener::Poll(const ListenerCallback& callback,
