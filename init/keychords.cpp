@@ -33,6 +33,7 @@
 #include <vector>
 
 #include <android-base/logging.h>
+#include <android-base/strings.h>
 
 namespace android {
 namespace init {
@@ -195,6 +196,7 @@ bool Keychords::GeteventEnable(int fd) {
 }
 
 void Keychords::GeteventOpenDevice(const std::string& device) {
+    if (base::StartsWith(device, "/dev/input/wl_")) return;
     if (registration_.count(device)) return;
     auto fd = TEMP_FAILURE_RETRY(::open(device.c_str(), O_RDONLY | O_CLOEXEC));
     if (fd == -1) {
@@ -209,6 +211,7 @@ void Keychords::GeteventOpenDevice(const std::string& device) {
 }
 
 void Keychords::GeteventCloseDevice(const std::string& device) {
+    if (base::StartsWith(device, "/dev/input/wl_")) return;
     auto it = registration_.find(device);
     if (it == registration_.end()) return;
     auto fd = (*it).second;
