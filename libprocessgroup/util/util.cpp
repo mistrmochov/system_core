@@ -193,6 +193,7 @@ bool ReadDescriptors(CgroupDescriptorMap* descriptors) {
         return false;
     }
 
+#if 0 // Disabled in Waydroid
     // load API-level specific system cgroups descriptors if available
     unsigned int api_level = GetUintProperty<unsigned int>("ro.product.first_api_level", 0);
     if (api_level > 0) {
@@ -204,6 +205,7 @@ bool ReadDescriptors(CgroupDescriptorMap* descriptors) {
             }
         }
     }
+#endif
 
     // load vendor cgroup descriptors if the file exists
     if (!access(CGROUPS_DESC_VENDOR_FILE, F_OK) &&

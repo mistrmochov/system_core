@@ -92,16 +92,7 @@
   "Profiles": [
     {
       "Name": "HighEnergySaving",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "background"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "Frozen",
@@ -131,81 +122,27 @@
     },
     {
       "Name": "NormalPerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "system"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "ServicePerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "system-background"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "HighPerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "foreground"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "HighPerformanceWI",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "foreground_window"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "MaxPerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "top-app"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "RealtimePerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "rt"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "RealTimeInputScheduling",
@@ -222,42 +159,15 @@
     },
     {
       "Name": "CameraServicePerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "camera-daemon"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "NNApiHALPerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "nnapi-hal"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "Dex2oatPerformance",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "cpu",
-            "Path": "dex2oat"
-          }
-        }
-      ]
+      "Actions": []
     },
     {
       "Name": "CpuPolicySpread",
@@ -290,11 +200,13 @@
       "Name": "VrKernelCapacity",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": ""
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -303,11 +215,13 @@
       "Name": "VrServiceCapacityLow",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "system/background"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -316,11 +230,13 @@
       "Name": "VrServiceCapacityNormal",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "system"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -329,11 +245,13 @@
       "Name": "VrServiceCapacityHigh",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "system/performance"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -342,11 +260,13 @@
       "Name": "VrProcessCapacityLow",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "application/background"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -355,11 +275,13 @@
       "Name": "VrProcessCapacityNormal",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "application"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -368,11 +290,13 @@
       "Name": "VrProcessCapacityHigh",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "application/performance"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -382,11 +306,13 @@
       "Name": "ProcessCapacityLow",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "background"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -395,11 +321,13 @@
       "Name": "ProcessCapacityNormal",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": ""
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -408,11 +336,13 @@
       "Name": "ProcessCapacityHigh",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "foreground"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -421,11 +351,13 @@
       "Name": "ProcessCapacityHighWI",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "foreground_window"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -434,11 +366,13 @@
       "Name": "ProcessCapacityMax",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "top-app"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -448,11 +382,13 @@
       "Name": "ServiceCapacityLow",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "system-background"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -461,11 +397,13 @@
       "Name": "ServiceCapacityRestricted",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "restricted"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -475,11 +413,13 @@
       "Name": "CameraServiceCapacity",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "camera-daemon"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.efficient",
+            "DefaultValue": ""
           }
         }
       ]
@@ -488,11 +428,13 @@
       "Name": "LowIoPriority",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
-            "Controller": "blkio",
-            "Path": "background"
+            "Controller": "io",
+            "Interface": "weight",
+            "PropertyName": "ro.cgroup2.io.weight.low",
+            "DefaultValue": "100"
           }
         }
       ]
@@ -501,11 +443,13 @@
       "Name": "NormalIoPriority",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
-            "Controller": "blkio",
-            "Path": ""
+            "Controller": "io",
+            "Interface": "weight",
+            "PropertyName": "ro.cgroup2.io.weight.default",
+            "DefaultValue": "1000"
           }
         }
       ]
@@ -514,11 +458,13 @@
       "Name": "HighIoPriority",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
-            "Controller": "blkio",
-            "Path": ""
+            "Controller": "io",
+            "Interface": "weight",
+            "PropertyName": "ro.cgroup2.io.weight.default",
+            "DefaultValue": "1000"
           }
         }
       ]
@@ -527,11 +473,13 @@
       "Name": "MaxIoPriority",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
-            "Controller": "blkio",
-            "Path": ""
+            "Controller": "io",
+            "Interface": "weight",
+            "PropertyName": "ro.cgroup2.io.weight.default",
+            "DefaultValue": "1000"
           }
         }
       ]
@@ -566,11 +514,13 @@
       "Name": "SFMainPolicy",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "foreground"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -579,11 +529,13 @@
       "Name": "SFRenderEnginePolicy",
       "Actions": [
         {
-          "Name": "JoinCgroup",
+          "Name": "SetCgroupV2Attribute",
           "Params":
           {
             "Controller": "cpuset",
-            "Path": "foreground"
+            "Interface": "cpus",
+            "PropertyName": "ro.cgroup2.cpuset.default",
+            "DefaultValue": ""
           }
         }
       ]
@@ -628,19 +580,6 @@
           {
             "Name": "MemSwappiness",
             "Value": "100"
-          }
-        }
-      ]
-    },
-    {
-      "Name": "SystemMemoryProcess",
-      "Actions": [
-        {
-          "Name": "JoinCgroup",
-          "Params":
-          {
-            "Controller": "memory",
-            "Path": "system"
           }
         }
       ]

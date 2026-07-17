@@ -19,6 +19,9 @@
 
 #include <task_profiles.h>
 
+#include <processgroup/processgroup.h>
+
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -44,6 +47,7 @@
 #include <json/value.h>
 
 using android::base::GetThreadId;
+using android::base::GetProperty;
 using android::base::GetUintProperty;
 using android::base::StringPrintf;
 using android::base::StringReplace;
@@ -498,6 +502,20 @@ bool WriteFileAction::WriteValueToFile(const std::string& value_, ResourceCacheT
         path = proc_path_;
     }
 
+    // Ensure the target cgroup exists for cgroup v2 attribute writes
+    if (createProcessGroup(uid, pid, false) != 0) {
+        LOG(VERBOSE) << "createProcessGroup failed for uid " << uid << " pid " << pid;
+    }
+
+    path = StringReplace(path, "<uid>", std::to_string(uid), true);
+    path = StringReplace(path, "<pid>", std::to_string(pid), true);
+
+    if (std::filesystem::exists(StringReplace(path, "<cgroup_dir>", "apps", true))) {
+        path = StringReplace(path, "<cgroup_dir>", "apps", true);
+    } else {
+        path = StringReplace(path, "<cgroup_dir>", "system", true);
+    }
+
     // Use WriteStringToFd instead of WriteStringToFile because the latter will open file with
     // O_TRUNC which causes kernfs_mutex contention
     unique_fd tmp_fd(TEMP_FAILURE_RETRY(open(path.c_str(), O_WRONLY | O_CLOEXEC)));
@@ -539,9 +557,8 @@ ProfileAction::CacheUseResult WriteFileAction::UseCachedFd(ResourceCacheType cac
 
     if (cache_type == ResourceCacheType::RCT_TASK &&
         fd_[cache_type] == FdCacheHelper::FDS_APP_DEPENDENT) {
-        // application-dependent path can't be used with tid
-        LOG(ERROR) << Name() << ": application profile can't be applied to a thread";
-        return ProfileAction::FAIL;
+        // application-dependent path can't be cached for tid; fall back to per-call write
+        return ProfileAction::UNUSED;
     }
     return ProfileAction::UNUSED;
 }
@@ -897,6 +914,7 @@ TaskProfiles::TaskProfiles() {
         LOG(ERROR) << "Loading " << TASK_PROFILE_DB_FILE << " for [" << getpid() << "] failed";
     }
 
+#if 0 // Disabled in Waydroid
     // load API-level specific system task profiles if available
     unsigned int api_level = GetUintProperty<unsigned int>("ro.product.first_api_level", 0);
     if (api_level > 0) {
@@ -908,6 +926,7 @@ TaskProfiles::TaskProfiles() {
             }
         }
     }
+#endif
 
     // load vendor task profiles if the file exists
     if (!access(TASK_PROFILE_DB_VENDOR_FILE, F_OK) &&
@@ -1007,12 +1026,35 @@ bool TaskProfiles::Load(const CgroupMap& cg_map, const std::string& file_name) {
                 } else {
                     LOG(WARNING) << "SetAttribute: unknown attribute: " << attr_name;
                 }
-            } else if (action_name == "WriteFile") {
-                std::string attr_filepath = params_val["FilePath"].asString();
-                std::string attr_procfilepath = params_val["ProcFilePath"].asString();
-                std::string attr_value = params_val["Value"].asString();
-                // FilePath and Value are mandatory
-                if (!attr_filepath.empty() && !attr_value.empty()) {
+            } else if (action_name == "WriteFile" || action_name == "SetCgroupV2Attribute") {
+                std::string attr_controller, attr_interface, attr_prop_name, attr_default_value, attr_filepath, attr_procfilepath, attr_value;
+                if (action_name == "SetCgroupV2Attribute") {
+                    attr_controller = params_val["Controller"].asString();
+                    attr_interface = params_val["Interface"].asString();
+                    attr_prop_name = params_val["PropertyName"].asString();
+                    attr_default_value = params_val["DefaultValue"].asString();
+                    attr_filepath = android::base::StringPrintf("/sys/fs/cgroup/<cgroup_dir>/uid_<uid>/pid_<pid>/%s.%s", attr_controller.c_str(), attr_interface.c_str());
+                    attr_procfilepath = attr_filepath;
+                    attr_value = GetProperty(attr_prop_name, params_val["DefaultValue"].asString());
+
+                    std::string controllers;
+                    if (!android::base::ReadFileToString("/sys/fs/cgroup/cgroup.controllers", &controllers)) {
+                        PLOG(WARNING) << "Failed to read available cgroup v2 controller list";
+                        continue;
+                    }
+
+                    if (controllers.find(attr_controller) == std::string::npos) {
+                        LOG(WARNING) << "Controller " << attr_controller << " is not available";
+                        continue;
+                    }
+                } else {
+                    attr_filepath = params_val["FilePath"].asString();
+                    attr_procfilepath = params_val["ProcFilePath"].asString();
+                    attr_value = params_val["Value"].asString();
+                }
+
+                // FilePath is mandatory
+                if (!attr_filepath.empty() /* && !attr_value.empty() */) {
                     std::string attr_logfailures = params_val["LogFailures"].asString();
                     bool logfailures = attr_logfailures.empty() || attr_logfailures == "true";
                     profile->Add(std::make_unique<WriteFileAction>(attr_filepath, attr_procfilepath,
@@ -1020,7 +1062,7 @@ bool TaskProfiles::Load(const CgroupMap& cg_map, const std::string& file_name) {
                 } else if (attr_filepath.empty()) {
                     LOG(WARNING) << "WriteFile: invalid parameter: "
                                  << "empty filepath";
-                } else if (attr_value.empty()) {
+                } else if (false /* attr_value.empty() */) {
                     LOG(WARNING) << "WriteFile: invalid parameter: "
                                  << "empty value";
                 }
