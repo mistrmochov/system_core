@@ -829,6 +829,7 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
     }
 
     mkdir_recursive(Dirname(devpath), 0755);
+    if (input_dev) chown("/dev/input", AID_SYSTEM, AID_SYSTEM);
 
     HandleDevice(uevent.action, devpath, block, uevent.major, uevent.minor, links);
 
