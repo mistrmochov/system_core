@@ -392,6 +392,8 @@ class PersistWriteThread {
 
 static std::optional<uint32_t> PropertySet(const std::string& name, const std::string& value,
                                            SocketConnection* socket, std::string* error) {
+    static bool waydroid_init_done = false;
+    static pid_t waydroid_init_pid = -1;
     size_t valuelen = value.size();
 
     if (!IsLegalPropertyName(name)) {
@@ -412,13 +414,19 @@ static std::optional<uint32_t> PropertySet(const std::string& name, const std::s
         prop_info* pi = (prop_info*)__system_property_find(name.c_str());
         if (pi != nullptr) {
             // ro.* properties are actually "write-once", unless the system decides to
-            if ((StartsWith(name, "ro.") || name == "init.svc.adbd")
+            if ((StartsWith(name, "ro.") || name == "init.svc.adbd") && (waydroid_init_done || socket ? socket->cred().pid != waydroid_init_pid : true))
                     && !weaken_prop_override_security && !StartsWith(name, "ro.boot.vbmeta.")) {
                 *error = "Read-only property was already set";
                 return {PROP_ERROR_READ_ONLY_PROPERTY};
             }
 
             __system_property_update(pi, value.c_str(), valuelen);
+        } else if (!waydroid_init_done && socket && name == "waydroid.init.start") {
+            waydroid_init_pid = socket->cred().pid;
+            return {PROP_SUCCESS};
+        } else if (!waydroid_init_done && socket && name == "waydroid.init.done") {
+            waydroid_init_done = true;
+            return {PROP_SUCCESS};
         } else {
             int rc = __system_property_add(name.c_str(), name.size(), value.c_str(), valuelen);
             if (rc < 0) {
